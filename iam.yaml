@@ -1,0 +1,81 @@
+---
+
+- hosts: localhost
+  tasks:
+
+  - name: Lendo Arquivo CSV
+    community.general.read_csv:
+      path: usuario1.csv
+    delegate_to: localhost
+    register: userlist
+
+  - name: Create a user and attach a managed policy using its ARN
+    community.aws.iam_user:
+      name: "{{ item.usuarios }}"
+      password: "{{ item.senha }}"
+      password_reset_required: true
+      state: present
+      managed_policies:
+        - arn:aws:iam::aws:policy/IAMUserChangePassword
+      #   - arn:aws:iam::996335298728:policy/EnforceMFAPolicy
+    loop: "{{ userlist.list }}"
+
+  - name: Create a group and attach a managed policy using its ARN
+    community.aws.iam_group:
+      name: "{{ item.group }}"
+      managed_policies: "{{ item.arn }}"
+      state: present
+    loop:
+      - { group: 'CloudAdmin', arn: 'arn:aws:iam::aws:policy/AdministratorAccess'}
+      - { group: 'DBA', arn: 'arn:aws:iam::aws:policy/AmazonRDSFullAccess'}
+      - { group: 'Estagiarios', arn: 'arn:aws:iam::aws:policy/AmazonEC2ReadOnlyAccess'}
+      - { group: 'LinuxAdmin', arn: 'arn:aws:iam::aws:policy/AmazonEC2FullAccess'}
+      - { group: 'RedesAdmin', arn: 'arn:aws:iam::aws:policy/AmazonVPCFullAccess'}
+
+  - name: Attach policy
+    community.aws.iam_group:
+      name: "{{ item.grupo }}"
+      managed_policies:
+        - arn:aws:iam::996335298728:policy/EnforceMFAPolicy
+      state: present
+    loop: "{{ userlist.list }}"
+
+  - name: Incluir usuarios aos grupo CloudAdmin
+    community.aws.iam_group:
+      name: "{{ item.grupo }}"
+      users: "{{ item.usuarios }}"
+      state: present
+    loop: "{{ userlist.list }}"
+    when: item.grupo == "CloudAdmin"
+
+  - name: Incluir usuarios aos grupo DBA
+    community.aws.iam_group:
+      name: "{{ item.grupo }}"
+      users: "{{ item.usuarios }}"
+      state: present
+    loop: "{{ userlist.list }}"
+    when: item.grupo == "DBA"
+
+  - name: Incluir usuarios aos grupo Estagiarios
+    community.aws.iam_group:
+      name: "{{ item.grupo }}"
+      users: "{{ item.usuarios }}"
+      state: present
+    loop: "{{ userlist.list }}"
+    when: item.grupo == "Estagiarios"
+
+  - name: Incluir usuarios aos grupo LinuxAdmin
+    community.aws.iam_group:
+      name: "{{ item.grupo }}"
+      users: "{{ item.usuarios }}"
+      state: present
+    loop: "{{ userlist.list }}"
+    when: item.grupo == "LinuxAdmin"
+
+  - name: Incluir usuarios aos grupo RedesAdmin
+    community.aws.iam_group:
+      name: "{{ item.grupo }}"
+      users: "{{ item.usuarios }}"
+      state: present
+    loop: "{{ userlist.list }}"
+    when: item.grupo == "RedesAdmin"
